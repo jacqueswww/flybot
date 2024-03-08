@@ -1,0 +1,3 @@
+langchain-core==0.1.30
+langchain-openai==0.0.8
+langserve[all]==0.0.46
