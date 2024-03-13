@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FlyBot Messenger</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+</head>
+<body>
+  <div id="app" class="chat-container">
+    <div class="chat-messages">
+      <div :class="{
+          'speech-bubble': true,
+          'bot-bubble-offset': msg.sender == 'bot',
+          'user-bubble-offset': msg.sender == 'user',
+          }" v-for="(msg, index) in messages" :key="index">
+        {{ msg.text }}
+      </div>
+    </div>
+    <input
+      v-on:keyup.enter="onEnter"
+      class="message-input" type="text" v-model="newMessage"
+      placeholder="Type your message...">
+    <button class="send-button" @click="sendMessage(false)">Send</button>
+    <button class="send-button" @click="sendMessage(true)">Send Bot</button>
+  </div>
+
+
+  <script src="script.js"></script>
+</body>
+</html>
