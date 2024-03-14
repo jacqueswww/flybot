@@ -31,7 +31,8 @@ from langchain.agents.format_scratchpad.openai_tools import (
 
 store = {}
 MEMORY_KEY = "chat_history"
-MW_BASE_URL = 'http://localhost:8000/'
+# MW_BASE_URL = 'http://localhost:8000/'
+MW_BASE_URL = 'https://fa-api-prod.bluemarket.io/'
 chat_history = []
 
 
@@ -56,6 +57,18 @@ async def get_routes():
     """List all the routes FlySafair flies."""
     async with httpx.AsyncClient() as client:
         resp = await client.get(f'{MW_BASE_URL}public_api/flights/routes/')
+        output = resp.json()
+        return output['results']
+
+
+@tool
+async def get_flight_status(flight_number: str, departure_date: str):
+    """
+    Given a flight number and departure date, lookup flight status,
+    also return departure gate and other flight times if available."""
+    flight_number = ''.join([x for x in flight_number if x.isdigit()])
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(f'{MW_BASE_URL}/public_api/flights/{flight_number}/{departure_date}/status')
         output = resp.json()
         return output['results']
 
@@ -121,10 +134,12 @@ async def init_action(verbose=False):
     llm_with_tools = llm.bind_tools([
         convert_to_openai_tool(get_routes),
         convert_to_openai_tool(search_available_flights),
+        convert_to_openai_tool(get_flight_status),
     ])
     tools = [
         get_routes,
         search_available_flights,
+        get_flight_status,
     ]
     prompt = await get_prompt()
     agent = (
