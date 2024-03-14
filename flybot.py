@@ -1,6 +1,6 @@
 import json
 import datetime
-import requests
+import httpx
 
 from typing import Any, Type
 
@@ -52,14 +52,16 @@ class Multiply(BaseTool):
 
 
 @tool
-def get_routes():
+async def get_routes():
     """List all the routes FlySafair flies."""
-    output = requests.get(f'{MW_BASE_URL}public_api/flights/routes/').json()
-    return output['results']
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(f'{MW_BASE_URL}public_api/flights/routes/')
+        output = resp.json()
+        return output['results']
 
 
 @tool
-def search_available_flights(origin, destination, depart_date, number_of_adults, number_of_children, number_of_infants):
+async def search_available_flights(origin, destination, depart_date, number_of_adults, number_of_children, number_of_infants):
     """Search available flights, for one way tickets, given origin, destination airports in IATA codes, and departure date in iso format.
     Passegner capacity is filled using number_of_adults, number_of_children, number_of_infants which has to be a nonzero number."""
     passengers = []
@@ -84,27 +86,37 @@ def search_available_flights(origin, destination, depart_date, number_of_adults,
         "depart_date": depart_date,
         "required_passengers": passengers
     }
-    return requests.post(f'{MW_BASE_URL}public_api/pricing/fares/', json=params).json()
-
-date_today = datetime.datetime.now().date().isoformat()
-routes = requests.get(f'{MW_BASE_URL}public_api/flights/routes/').json()
-departure_airports = ','.join([x['airport_code'] for x in routes['results']])
-system_prompt = f"""You are a helpful assistant. Your name is Flybot. You are responsible for booking and managing FlySafair bookings.
-FlySafair is a low cost domestic airline based in Southern Africa.
-Flybot is talkative and provides lots of specific details from its context.
-If you do not know the answer to a question, it truthfully says it does not know.
-You only may assist with FlySafair, bookings & flight queries. Today's date is {date_today}. Valid departure airports are: {departure_airports}.
-"""
-
-prompt = ChatPromptTemplate.from_messages([
-    SystemMessagePromptTemplate(prompt=PromptTemplate(input_variables=[], template=system_prompt)),
-    MessagesPlaceholder(variable_name='chat_history'),
-    HumanMessagePromptTemplate(prompt=PromptTemplate(input_variables=['input'], template='{input}')),
-    MessagesPlaceholder(variable_name='agent_scratchpad')
-])
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(f'{MW_BASE_URL}public_api/pricing/fares/', json=params)
+        return resp.json()
 
 
-def init_action(verbose=False):
+async def get_prompt():
+    date_today = datetime.datetime.now().date().isoformat()
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(f'{MW_BASE_URL}public_api/flights/routes/')
+        routes = resp.json()
+
+    departure_airports = ','.join([x['airport_code'] for x in routes['results']])
+    system_prompt = f"""You are a helpful assistant. Your name is Flybot.
+    You are responsible for booking and managing FlySafair bookings.
+    FlySafair is a low cost domestic airline based in Southern Africa.
+    Flybot is talkative and provides lots of specific details from its context.
+    If you do not know the answer to a question, it truthfully says it does not know.
+    You only may assist with FlySafair, bookings & flight queries. Today's date is {date_today}.
+    Valid departure airports are: {departure_airports}.
+    """
+
+    prompt = ChatPromptTemplate.from_messages([
+        SystemMessagePromptTemplate(prompt=PromptTemplate(input_variables=[], template=system_prompt)),
+        MessagesPlaceholder(variable_name='chat_history'),
+        HumanMessagePromptTemplate(prompt=PromptTemplate(input_variables=['input'], template='{input}')),
+        MessagesPlaceholder(variable_name='agent_scratchpad')
+    ])
+    return prompt
+
+
+async def init_action(verbose=False):
     llm = ChatOpenAI(model="gpt-3.5-turbo-0125", temperature=0.1)
     llm_with_tools = llm.bind_tools([
         convert_to_openai_tool(get_routes),
@@ -114,6 +126,7 @@ def init_action(verbose=False):
         get_routes,
         search_available_flights,
     ]
+    prompt = await get_prompt()
     agent = (
         {
             "input": lambda x: x["input"],
@@ -127,17 +140,18 @@ def init_action(verbose=False):
     return agent_executor
 
 
-agent_executor = init_action(verbose=False)
-while True:
-    inp = input()
-    if inp.lower() == 'exit':
-        break
-    result = agent_executor.invoke({"input": inp, "chat_history": chat_history})
-    chat_history.extend(
-        [
-            HumanMessage(content=inp),
-            AIMessage(content=result["output"]),
-        ]
-    )
-    chat_history = chat_history[-5:]
-    print('> ', result["output"])
+if __name__ == '__main__':
+    agent_executor = init_action(verbose=False)
+    while True:
+        inp = input()
+        if inp.lower() == 'exit':
+            break
+        result = agent_executor.invoke({"input": inp, "chat_history": chat_history})
+        chat_history.extend(
+            [
+                HumanMessage(content=inp),
+                AIMessage(content=result["output"]),
+            ]
+        )
+        chat_history = chat_history[-5:]
+        print('> ', result["output"])

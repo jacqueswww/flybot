@@ -2,14 +2,17 @@ body {
   font-family: Arial, sans-serif;
   margin: 0;
   padding: 0;
+  min-height: 95vh;
+  background: linear-gradient(to bottom, #64b5f6, #2196f3);
 }
 
 .chat-container {
   max-width: 400px;
-  margin: 20px auto;
+  margin: 30px auto;
   border: 1px solid #ccc;
   border-radius: 5px;
   padding: 20px;
+  background: white;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
@@ -31,8 +34,8 @@ body {
   align-self: flex-end;
 }
 
-#message-input {
-  width: calc(100% - 70px);
+.message-input {
+  width: 73%;
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 5px;
@@ -40,6 +43,7 @@ body {
 }
 
 .send-button {
+  width: 20%;
   padding: 10px;
   border: none;
   border-radius: 5px;
@@ -54,6 +58,7 @@ body {
 }
 
 .speech-bubble {
+  font-size: 15px;
   margin-left: 5px;
   margin-top: 5px;
   position: relative;
@@ -92,6 +97,54 @@ body {
   margin-top: -5px;
   width: 0;
   height: 0;
-  border-left: 10px solid #c6d7f8;
+  border-left: 5px solid #c6d7f8;
   border-bottom: 5px solid transparent;
 }
+
+.alert {
+  padding: 15px;
+  background-color: #f44336; /* Red background color */
+  color: white; /* White text color */
+  border-radius: 4px; /* Rounded corners */
+  margin-bottom: 20px; /* Add some space below the alert */
+}
+
+/* Add a close button to the alert */
+.closebtn {
+  margin-left: 15px;
+  color: white;
+  font-weight: bold;
+  float: right;
+  font-size: 22px;
+  line-height: 20px;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+/* When hovering over the close button */
+.closebtn:hover {
+  color: black;
+}
+
+/* Keyframes for the typing animation */
+@keyframes typing {
+  0% {
+    width: 0;
+  }
+  50% {
+    width: 100%;
+  }
+  100% {
+    width: 0;
+  }
+}
+
+/* CSS for the typing animation */
+.typing-animation {
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+  animation: typing 1s infinite;
+  color: #ccc; /* Muted color */
+}
+

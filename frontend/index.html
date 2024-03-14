@@ -15,18 +15,24 @@
           'bot-bubble-offset': msg.sender == 'bot',
           'user-bubble-offset': msg.sender == 'user',
           }" v-for="(msg, index) in messages" :key="index">
-        {{ msg.text }}
+        <span
+          v-if="msg.type == 'action'"
+          class="typing-animation">Running query...</span>
+        <span v-else v-html="msg.text"></span>
+      </div>
+    </div>
+    <div v-if="disconnected">
+      <div id="alert" class="alert">
+        <span @click="connectSocket" class="closebtn">&times;</span> 
+        WebSocket connection closed.
       </div>
     </div>
     <input
-      v-on:keyup.enter="onEnter"
+      @keyup.enter="sendMessage(false)"
       class="message-input" type="text" v-model="newMessage"
       placeholder="Type your message...">
     <button class="send-button" @click="sendMessage(false)">Send</button>
-    <button class="send-button" @click="sendMessage(true)">Send Bot</button>
   </div>
-
-
   <script src="script.js"></script>
 </body>
 </html>
