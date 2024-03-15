@@ -62,12 +62,9 @@ new Vue({
       let msg_payload = JSON.parse(event.data)
       let existing_msg = this.messages.find(x => x.id == msg_payload.id)
       console.log(msg_payload)
-      if (existing_msg && existing_msg.type == 'action') {
-        existing_msg.text += this.markdownToHtml(msg_payload.text);
+      if (existing_msg) {
+        existing_msg.text = this.markdownToHtml(msg_payload.text);
         existing_msg.type = msg_payload.type;
-        if (msg_payload.type == 'output') {
-          existing_msg.text = this.markdownToHtml(msg_payload.text)
-        }
       } else {
         this.messages.push({
           id: msg_payload.id,
@@ -76,6 +73,8 @@ new Vue({
           sender: 'bot'
         })
       }
+      let objDiv = document.getElementsByClassName("chat-messages")[0];
+      objDiv.scrollTop = objDiv.scrollHeight;
     },
     sendMessage(asBot) {
       if (this.newMessage.trim() !== '') {
