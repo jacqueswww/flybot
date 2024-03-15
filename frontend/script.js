@@ -24,7 +24,7 @@ new Vue({
       this.socket = new WebSocket(hostURL + `/feed`);
       // Event listener for WebSocket connection established
       this.socket.addEventListener('open', function (event) {
-          console.log('WebSocket connection established');
+        console.log('WebSocket connection established');
       });
       // Event listener for messages received from the server
       this.socket.addEventListener('message', this.onMessage);
@@ -32,7 +32,7 @@ new Vue({
       this.socket.addEventListener('close', this.onClose);
       // Event listener for WebSocket connection errors
       this.socket.addEventListener('error', function (event) {
-          console.error('WebSocket error:', event);
+        console.error('WebSocket error:', event);
       });
     },
     markdownToHtml(markdown) {
@@ -61,10 +61,11 @@ new Vue({
       console.log('Message from server:', event.data);
       let msg_payload = JSON.parse(event.data)
       let existing_msg = this.messages.find(x => x.id == msg_payload.id)
-      if (existing_msg) {
+      console.log(msg_payload)
+      if (existing_msg && existing_msg.type == 'action') {
         existing_msg.text += this.markdownToHtml(msg_payload.text);
         existing_msg.type = msg_payload.type;
-        if (existing_msg.type == 'action' &&  msg_payload.type == 'output') {
+        if (msg_payload.type == 'output') {
           existing_msg.text = this.markdownToHtml(msg_payload.text)
         }
       } else {

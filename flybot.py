@@ -7,6 +7,7 @@ from typing import Any, Type
 from langchain_core.tools import BaseTool
 from langchain_core.utils.function_calling import convert_to_openai_tool
 
+from langchain.tools.retriever import create_retriever_tool
 from langchain_openai import ChatOpenAI
 from langchain_core.pydantic_v1 import BaseModel, Field
 
@@ -28,6 +29,7 @@ from langchain.agents.output_parsers.openai_tools import OpenAIToolsAgentOutputP
 from langchain.agents.format_scratchpad.openai_tools import (
     format_to_openai_tool_messages,
 )
+from vector_store import get_zendesk_vector_db_connection
 
 store = {}
 MEMORY_KEY = "chat_history"
@@ -104,6 +106,20 @@ async def search_available_flights(origin, destination, depart_date, number_of_a
         return resp.json()
 
 
+def get_zendesk_retriever():
+    db = get_zendesk_vector_db_connection()
+    retriever = db.as_retriever()
+    tool = create_retriever_tool(
+        retriever,
+        "flysafair_zendesk_articles",
+        (
+            "Searches and returns existing knowledge base."
+            "All human question should be checked against this."
+        )
+    )
+    return tool
+
+
 async def get_prompt():
     date_today = datetime.datetime.now().date().isoformat()
     async with httpx.AsyncClient() as client:
@@ -131,15 +147,18 @@ async def get_prompt():
 
 async def init_action(verbose=False):
     llm = ChatOpenAI(model="gpt-3.5-turbo-0125", temperature=0.1)
+    retrieval_tool = get_zendesk_retriever()
     llm_with_tools = llm.bind_tools([
         convert_to_openai_tool(get_routes),
         convert_to_openai_tool(search_available_flights),
         convert_to_openai_tool(get_flight_status),
+        convert_to_openai_tool(retrieval_tool),
     ])
     tools = [
         get_routes,
         search_available_flights,
         get_flight_status,
+        retrieval_tool,
     ]
     prompt = await get_prompt()
     agent = (
