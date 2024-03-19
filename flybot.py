@@ -1,3 +1,4 @@
+import os
 import json
 import datetime
 import httpx
@@ -31,27 +32,28 @@ from langchain.agents.format_scratchpad.openai_tools import (
 )
 from vector_store import get_zendesk_vector_db_connection
 
-store = {}
+
 MEMORY_KEY = "chat_history"
-# MW_BASE_URL = 'http://localhost:8000/'
-MW_BASE_URL = 'https://fa-api-prod.bluemarket.io/'
-chat_history = []
+MW_BASE_URL = os.environ.get('MIDDLEWARE_URL')
+MW_API_KEY = os.environ.get('MIDDLEWARE_API_KEY')
 
 
-class MultiplySchema(BaseModel):
-    """Multiply tool schema."""
-
-    a: int = Field(..., description="First integer")
-    b: int = Field(..., description="Second integer")
-
-
-class Multiply(BaseTool):
-    args_schema: Type[BaseModel] = MultiplySchema
-    name: str = "multiply"
-    description: str = "Multiply two integers together."
-
-    def _run(self, a: int, b: int, **kwargs: Any) -> Any:
-        return a * b
+@tool
+async def callback_request(name, phone_number):
+    """
+    Call back request; for when you want FlySafair to phone you back for a query.
+    Requires a valid phone number, as well a name which must be obtained form the human.
+    The human needs to be identified by name and phone number.
+    """
+    # payload = {
+    #     "name": name,
+    #     "msisdn": phone_number
+    # }
+    # headers = {
+    #     'Authorization': f'Token {MW_API_KEY}',
+    # }
+    # async with httpx.AsyncClient() as client:
+    return "Thank you {name}, we shall call you back as soon as possible on {phone_number}."
 
 
 @tool
@@ -153,12 +155,14 @@ async def init_action(verbose=False):
         convert_to_openai_tool(search_available_flights),
         convert_to_openai_tool(get_flight_status),
         convert_to_openai_tool(retrieval_tool),
+        convert_to_openai_tool(callback_request),
     ])
     tools = [
         get_routes,
         search_available_flights,
         get_flight_status,
         retrieval_tool,
+        callback_request,
     ]
     prompt = await get_prompt()
     agent = (
@@ -175,6 +179,7 @@ async def init_action(verbose=False):
 
 
 if __name__ == '__main__':
+    chat_history = []
     agent_executor = init_action(verbose=False)
     while True:
         inp = input()
