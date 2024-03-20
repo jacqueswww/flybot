@@ -1,7 +1,7 @@
+chromadb==0.4.24
 langchain-core==0.1.30
 langchain-openai==0.0.8
 langserve[all]==0.0.46
 sanic==23.12.1
 sentence-transformers==2.5.1
-chromadb==0.4.24
-
+unstructured==0.12.6
